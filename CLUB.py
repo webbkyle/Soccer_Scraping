@@ -15,25 +15,33 @@ import requests
 import urllib2
 from collections import OrderedDict
 import datetime
-from General_functions import search_google_query
+from Gen_funcs import search_google_query, season_2_option
+
 
 
 # Class to define a club and to search websites for club data
 class club:
-    def __init__(self, Name = 'Liverpool', season = 2017, close = True):
+    def __init__(self, Name, season, close=True):
         self.Name = Name
-        self.Stadium = "undefined"
-        self.url_name = "http://www2.squawka.com/teams/" + Name.lower() + "/stats#performance-score#english-barclays-premier-league#season-2017/2018#819#all-matches#1-38#by-match"
-        self.data_links = []
-        self.close = close
         self.season = season
+        self.Stadium = "undefined"
+        self.url_name_1 = "http://www2.squawka.com/teams/" + Name.lower() + "/stats#performance-score#english-barclays-premier-league#season-" + str(season) + "/" + str(season+1) + "#"
+        self.url_name_2 = "#all-matches#1-38#by-match"
+        self.close = close
 
+    # webscraper to go to squawka site by club and pull performance scores for each club by match
+    #   Description of performance scores: http://www.squawka.com/en/squawka-performance-score
     def gather_squawka_club(self):
         driver = webdriver.Chrome(executable_path=r"/Users/kylewebb/Downloads/chromedriver 5")
-        driver.get(self.url_name)
-        #driver.get("http://www2.squawka.com/teams/" + 'chelsea' + "/stats#performance-score#english-barclays-premier-league#season-2017/2018#819#all-matches#1-38#by-match")
-        #elems = driver.find_elements_by_xpath("//*[@href]")
-        driver.find_element_by_id('stat-1_cumulative').click()
+        squawk_url = season_2_option(self.season, self.url_name_1, self.url_name_2)
+        squawk_url = season_2_option(2012, "http://www2.squawka.com/teams/liverpool/stats#performance-score#english-barclays-premier-league#season-2012/2013#", "#all-matches#1-38#by-match")
+        driver.get(squawk_url)
+        try:
+            element = WebDriverWait(driver, 5).until(
+                EC.presence_of_element_located((By.XPATH, "//*[@id='season']"))
+            )
+        finally:
+            driver.find_element_by_id('stat-1_cumulative').click()
         match_table = driver.find_element_by_xpath("//div[@aria-label='A tabular representation of the data in the chart.']/table")
         date, attacking, possession, defensive, overall, match_data = ([] for i in range(6))
         attacking_cum, possession_cum, defensive_cum, overall_cum = ([0] for j in range(4))
@@ -71,6 +79,8 @@ class club:
 
         return dat
 
+    # webscraper for pulling names of players on the club, their position, their number, their country of origin,
+    #   and whether they are on hold with another club or not
     def gather_roster(self):
         driver = webdriver.Chrome(executable_path=r"/Users/kylewebb/Downloads/chromedriver 5")
         search_google_query(driver, self.Name + " FC wiki")
@@ -97,6 +107,7 @@ class club:
 
         return dat
 
+    # webscraper that searches google for the club's stadium name and returns it
     def stadium(self):
         driver = webdriver.Chrome(executable_path=r"/Users/kylewebb/Downloads/chromedriver 5")
         search_google_query(driver, "stadium " + self.Name + " FC")
