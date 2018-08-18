@@ -3,6 +3,7 @@ import time
 import pandas as pd
 from collections import OrderedDict
 from Gen_funcs import check_exists_by_css
+import numpy as np
 import re
 import unicodedata
 
@@ -52,11 +53,11 @@ class league:
 
         dat = pd.DataFrame(data=OrderedDict([(('Date'), date),
                                              (('Time'), sched_time),
-                                             (('Home Team'), home_team),
-                                             (('Away Team'), away_team),
-                                             (('Home Team Goals'), home_team_score),
-                                             (('Away Team Goals'), away_team_score),
-                                             (('Home Team Result'), home_team_result)]))
+                                             (('Home_Team'), home_team),
+                                             (('Away_Team'), away_team),
+                                             (('Home_Team_Goals'), home_team_score),
+                                             (('Away_Team_Goals'), away_team_score),
+                                             (('Home_Team_Result'), home_team_result)]))
 
         if self.close == True: driver.close()
 
@@ -69,7 +70,8 @@ class league:
         driver.get('https://www.transfermarkt.co.uk/premier-league/startseite/wettbewerb/GB1/plus/?saison_id=' + str(self.season))
         time.sleep(3)
         table = driver.find_element_by_class_name('items')
-        club, squadTotal, avgAge, foreignPlayers, totalmrkt, avgmrkt = ([] for i in range(6))
+        club, Seasons, squadTotal, avgAge, foreignPlayers, totalmrkt, avgmrkt = ([] for i in range(7))
+        Seasons = np.repeat(str(self.season) + '-' + str(self.season + 1), 20)
         for row in table.find_elements_by_tag_name('tr')[2:22]:
             markettab = row.text.split()
             #print markettab
@@ -87,11 +89,12 @@ class league:
             avgmrkt.append(float(avgStr))
         #print club, squadTotal, avgAge, foreignPlayers, totalmrkt, avgmrkt
         dat = pd.DataFrame(data=OrderedDict([(('Club'), club),
-                                             (('Squad Total'), squadTotal),
-                                             (('Average Age'), avgAge),
-                                             (('Foreign Players'), foreignPlayers),
-                                             (('Total Market Value'), totalmrkt),
-                                             (('Average Market Value'), avgmrkt)]))
+                                             (('Season'), Seasons[:]),
+                                             (('Squad_Total'), squadTotal),
+                                             (('Average_Age'), avgAge),
+                                             (('Foreign_Players'), foreignPlayers),
+                                             (('Total_Market_Value'), totalmrkt),
+                                             (('Average_Market_Value'), avgmrkt)]))
 
         # closes the browser
         if self.close == True: driver.close()

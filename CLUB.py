@@ -34,7 +34,7 @@ class club:
     def gather_squawka_club(self):
         driver = webdriver.Chrome(executable_path=r"/Users/kylewebb/Downloads/chromedriver 5")
         squawk_url = season_2_option(self.season, self.url_name_1, self.url_name_2)
-        squawk_url = season_2_option(2012, "http://www2.squawka.com/teams/liverpool/stats#performance-score#english-barclays-premier-league#season-2012/2013#", "#all-matches#1-38#by-match")
+        #squawk_url = season_2_option(2012, "http://www2.squawka.com/teams/liverpool/stats#performance-score#english-barclays-premier-league#season-2012/2013#", "#all-matches#1-38#by-match")
         driver.get(squawk_url)
         try:
             element = WebDriverWait(driver, 5).until(
@@ -67,13 +67,13 @@ class club:
 
         dat = pd.DataFrame(data=OrderedDict([(('Date'), date),
                                              (('Attacking'), attacking),
-                                             (('Attacking Cumulative'), attacking_cum),
+                                             (('Attacking_Cumulative'), attacking_cum),
                                              (('Possession'), possession),
-                                             (('Possession Cumulative'), possession_cum),
+                                             (('Possession_Cumulative'), possession_cum),
                                              (('Defensive'), defensive),
-                                             (('Defensive Cumuluative'), defensive_cum),
+                                             (('Defensive_Cumuluative'), defensive_cum),
                                              (('Overall'), overall),
-                                             (('Overall Cumulative'), overall_cum)]))
+                                             (('Overall_Cumulative'), overall_cum)]))
 
         if self.close == True: driver.close()
 
@@ -101,7 +101,7 @@ class club:
                                              (('Position'), position),
                                              (('Number'), number),
                                              (('Country'), country),
-                                             (('On Hold'), on_hold)]))
+                                             (('On_Hold'), on_hold)]))
 
         if self.close == True: driver.close()
 
