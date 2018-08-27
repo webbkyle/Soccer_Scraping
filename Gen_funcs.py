@@ -1,7 +1,10 @@
-from selenium.common.exceptions import ElementNotVisibleException
 import time
 import pandas as pd
 import numpy as np
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.by import By
+from selenium.common.exceptions import TimeoutException, ElementNotVisibleException, StaleElementReferenceException, NoSuchElementException
 
 #some general webscraping functions
 
@@ -13,12 +16,51 @@ def check_exists_by_css(d, css):
         return False
     return True
 
+def check_table_contents(tab):
+    try:
+        tab.find_elements_by_tag_name('td')
+    except (ElementNotVisibleException, TimeoutException, StaleElementReferenceException) as e:
+        return False
+    return True
+
+def tell_text(row):
+    try:
+        element = row.get_attribute('textContent')
+    except:
+        element = 0
+    if isinstance(element, basestring):
+        return True
+    else:
+        return False
+
 # given a driver, function to submit search on google's main query
 def search_google_query(d, searchString):
     d.get('http://www.google.com')
     body = d.find_element_by_name("q")
     body.send_keys(searchString)
     body.submit()
+
+def get_page(d, url, id = 0, xpath = 0):
+    delay = 3
+    v = False
+    while (v == False):
+        if id!= 0:
+            try:
+                myElem = WebDriverWait(d, delay).until(
+                    EC.presence_of_element_located((By.ID, id))
+                )
+            except (TimeoutException, NoSuchElementException):
+                v = False
+        else:
+            try:
+                myElem = WebDriverWait(d, delay).until(
+                    EC.presence_of_element_located((By.XPATH, xpath))
+                )
+            except (TimeoutException, NoSuchElementException):
+                v = False
+        v = True
+    d.get(url)
+
 
 # inputs list of class function webscrapers and provides wait mechanism until driver has closed so that next class webscraper can begin
 def Collect_driver_data(F):
@@ -65,20 +107,71 @@ def season_2_option(season, url1, url2):
 '''
 
 #maps a home and away team and their date of play from disparate datasets to obtain a row of differences
-'''def map_teams(home, away, date = 0, C, Ls):
-    if date not 0:
+'''def map_results(C, LS, LR):
+    Data = pd.DataFrame(columns = LR.columns.append(C.columns[2:]).append(LS.columns[2:]))
+    uni_years = LR.Year.unique()
+    for year in uni_years:
+        LR_sub_yr = LR.loc[LR.Year.isin(year)]
+        for i in enumerate(len(LR_sub_yr)):
+            month = str(LR_sub_yr.Month[i])
+            home = str(LR_sub_yr.Home_Team[i])
+            away = str(LR_sub_yr.Away_Team[i])
+            sqsub_home = drill_down(C, year, month, home)
+            sqsub_away = drill_down(C, year, month, away)
+            if(month >= 8):
+                season = year + '-' + str(int(year) + 1)
+                spsub_home = drill_down_sp(LS, season, home)
+                spsub_away = drill_down_sp(LS, season, away)
+            else:
+                season = str(int(year) - 1) + '-' + year
+                spsub_home = drill_down_sp(LS, season, home)
+                spsub_away = drill_down_sp(LS, season, away)
+            sq_diff = sqsub_home.columns[2:] - sqsub_away.columns[2:]
+            sp_diff = spsub_home.columns[2:] - spsub_away.columns[2:]
+            Data.append(LR)
+
+
+
+def drill_down(df, year, month, team):
+    A = df.loc[df.Year.isin([str(year)])]
+    B = A.loc[A.Month.isin([str(month)])]
+    return B.loc[B.Club.isin([team])]
+
+def drill_down_sp(df, season, team):
+    A = df.loc[df.Season.isin([str(season)])]
+    B = A.loc[A.Club.isin([str(team)])]
+    return B
+
+    uni_years = LR.Year.unique()
+    uni_months = LR.Month.unique()
+
+
+
+
+
+    for year in uni_years:
+        squawk_sub_year = C.loc[C.Year.isin([year])]
+        results_sub_year = LR.loc[LR.Year.isin([year])]
+        for month in uni_months:
+            squawk_sub_month = squawk_sub_year.loc[squawk_sub_year.Month.isin([month])]
+
+            squawk_sub_month.loc[squawk_sub_month.Club.isin(['burnley']), squawk_sub_month.columns[2:]]
+
+
+
+            lr_sub_date = LR.loc[C.Date.isin([date])]
+
+
+
+
+        X.loc[X.Club.isin(['burnley']), X.columns[2:]]
+        X.loc[X.Club.isin(['burnley']), X.columns[2:]] - X.loc[X.Club.isin(['bournemouth']), X.columns[2:]]
+        df.loc[df['Club'].isin(some_values)]
         row = C[C.Home_Team.isin([home]) and C.Away_Team.isin([away]) and C.Date.isin([date])]
     else:
         r_temp = C[C.Home_Team.isin([home]) and C.Away_Team.isin([away])]
         yr1 = C.index(r_temp).Date.str.strip('.')[2]
         yr2 = Ls.Season.str.strip('-')[0]
-        row = Ls[Ls.
 
 
-'''
-
-
-
-
-
-
+        '''

@@ -2,7 +2,7 @@ from selenium import webdriver
 import time
 import pandas as pd
 from collections import OrderedDict
-from Gen_funcs import check_exists_by_css
+from Gen_funcs import check_exists_by_css, get_page
 import numpy as np
 import re
 import unicodedata
@@ -18,12 +18,13 @@ class league:
     # webscraper for season fixtures including date and time of match, results, home and away teams
     def gather_results(self):
         driver = webdriver.Chrome(executable_path=r"/Users/kylewebb/Downloads/chromedriver 5")
-        driver.get('https://www.flashscore.com/football/england/premier-league-' + ''.join([str(self.season),'-',str(self.season+1)]) + '/results/')
+        get_url = 'https://www.flashscore.com/football/england/premier-league-' + ''.join([str(self.season),'-',str(self.season+1)]) + '/results/'
+        get_page(driver, get_url, 'fs-results')
         table = driver.find_element_by_id('fs-results')
         while(check_exists_by_css(driver, '#tournament-page-results-more') == True):
             # check_exists_by_css(driver, '#tournament-page-results-more')
             time.sleep(4)
-        date, sched_time, home_team, away_team, home_team_score, away_team_score, home_team_result = ([] for i in range(7))
+        day, month, year, sched_time, home_team, away_team, home_team_score, away_team_score, home_team_result = ([] for i in range(9))
         for row in table.find_elements_by_tag_name('tr')[2:]:
             fix_dat = row.text.splitlines()
             if len(fix_dat) < 2:
@@ -36,7 +37,10 @@ class league:
             else:
                 # date_cur += str(self.season)
                 date_cur += str(self.season)
-            date.append(date_cur)
+            date_n = date_cur.split(".")
+            day.append(date_n[0])
+            month.append(date_n[1])
+            year.append(date_n[2])
             sched_time.append(fix_dat[0].split()[1])
             home_team.append(fix_dat[1])
             away_team.append(fix_dat[2])
@@ -51,7 +55,9 @@ class league:
             else:
                 home_team_result.append('L')
 
-        dat = pd.DataFrame(data=OrderedDict([(('Date'), date),
+        dat = pd.DataFrame(data=OrderedDict([(('Day'), day),
+                                             (('Month'), month),
+                                             (('Year'), year),
                                              (('Time'), sched_time),
                                              (('Home_Team'), home_team),
                                              (('Away_Team'), away_team),

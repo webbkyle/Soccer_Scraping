@@ -15,7 +15,8 @@ import requests
 import urllib2
 from collections import OrderedDict
 import datetime
-from Gen_funcs import search_google_query, season_2_option
+from Gen_funcs import search_google_query, season_2_option, get_page, check_table_contents, tell_text
+from selenium.common.exceptions import StaleElementReferenceException, TimeoutException, NoSuchElementException
 
 
 
@@ -34,25 +35,39 @@ class club:
     def gather_squawka_club(self):
         driver = webdriver.Chrome(executable_path=r"/Users/kylewebb/Downloads/chromedriver 5")
         squawk_url = season_2_option(self.season, self.url_name_1, self.url_name_2)
-        #squawk_url = season_2_option(2012, "http://www2.squawka.com/teams/liverpool/stats#performance-score#english-barclays-premier-league#season-2012/2013#", "#all-matches#1-38#by-match")
-        driver.get(squawk_url)
+        #squawk_url = season_2_option(2012, "http://www2.squawka.com/teams/arsenal/stats#performance-score#english-barclays-premier-league#season-2012/2013#", "#all-matches#1-38#by-match")
+        m_table = "//div[@aria-label='A tabular representation of the data in the chart.']/table"
+        get_page(driver, squawk_url, xpath = m_table)
         try:
-            element = WebDriverWait(driver, 5).until(
-                EC.presence_of_element_located((By.XPATH, "//*[@id='season']"))
+            element = WebDriverWait(driver, 4).until(
+                EC.presence_of_element_located((By.XPATH, m_table))
             )
         finally:
             driver.find_element_by_id('stat-1_cumulative').click()
-        match_table = driver.find_element_by_xpath("//div[@aria-label='A tabular representation of the data in the chart.']/table")
-        date, attacking, possession, defensive, overall, match_data = ([] for i in range(6))
+            time.sleep(2)
+        match_table = driver.find_element_by_xpath(m_table)
+        day, month, year, attacking, possession, defensive, overall, match_data = ([] for i in range(8))
         attacking_cum, possession_cum, defensive_cum, overall_cum = ([0] for j in range(4))
-        for row in match_table.find_elements_by_tag_name('td'):
-             match_data.append(row.get_attribute('textContent'))
+        valid = False
+        while(valid == False):
+            valid = check_table_contents(match_table)
+        tag_table = match_table.find_elements_by_tag_name('td')
+        ignored_exceptions = (NoSuchElementException, StaleElementReferenceException,)
+        for row in tag_table:
+            A = tell_text(row)
+            while(A == False):
+                A = tell_text(row)
+            row_data = row.get_attribute('textContent')
+            match_data.append(str(row_data))
         count_prev = 0
         count = 5
         while count<=len(match_data):
             cur_dat = match_data[count_prev:count]
-            dateN = cur_dat[0].replace("/",".")
-            date.append(dateN)
+            dateN = cur_dat[0].replace("/", ".")
+            date_n = dateN.split(".")
+            day.append(date_n[0])
+            month.append(date_n[1])
+            year.append(date_n[2])
             attacking.append(float(cur_dat[1]))
             possession.append(float(cur_dat[2]))
             defensive.append(float(cur_dat[3]))
@@ -65,7 +80,9 @@ class club:
             count_prev += 5
             count += 5
 
-        dat = pd.DataFrame(data=OrderedDict([(('Date'), date),
+        dat = pd.DataFrame(data=OrderedDict([(('Day'), day),
+                                             (('Month'), month),
+                                             (('Year'), year),
                                              (('Attacking'), attacking),
                                              (('Attacking_Cumulative'), attacking_cum),
                                              (('Possession'), possession),
